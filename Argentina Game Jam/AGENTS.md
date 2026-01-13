@@ -1,8 +1,14 @@
 <!-- UNITY CODE ASSIST INSTRUCTIONS START -->
 - Project name: Argentina Game Jam
 - Unity version: Unity 6000.3.2f1
+- Active scene:
+  - Name: 02 Levels Scene
+  - Tags:
+    - Untagged, Respawn, Finish, EditorOnly, MainCamera, Player, GameController
+  - Layers:
+    - Default, TransparentFX, Ignore Raycast, Water, UI
 - Active game object:
-  - Name: LevelRoot_Boss
+  - Name: LosePanel
   - Tag: Untagged
-  - Layer: Default
+  - Layer: UI
 <!-- UNITY CODE ASSIST INSTRUCTIONS END -->

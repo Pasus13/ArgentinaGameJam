@@ -13782,7 +13782,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5231010840363933286, guid: 3cfc9eb66d5f661479f3f37d3791a0ce, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 4
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 5231010840363933286, guid: 3cfc9eb66d5f661479f3f37d3791a0ce, type: 3}
       propertyPath: m_LocalRotation.w
@@ -13815,10 +13815,10 @@ PrefabInstance:
     - target: {fileID: 8508728889335794781, guid: 3cfc9eb66d5f661479f3f37d3791a0ce, type: 3}
       propertyPath: currentTile
       value: 
-      objectReference: {fileID: 1216883385}
+      objectReference: {fileID: 2033618101}
     - target: {fileID: 8508728889335794781, guid: 3cfc9eb66d5f661479f3f37d3791a0ce, type: 3}
       propertyPath: StepsPerTurn
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8508728889335794781, guid: 3cfc9eb66d5f661479f3f37d3791a0ce, type: 3}
       propertyPath: turnFrequency
@@ -14585,7 +14585,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1101714569
 Transform:
   m_ObjectHideFlags: 0
@@ -15942,17 +15942,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 511016630745471307, guid: 8652a4b0d8c9a18469768ae1ffc9a06a, type: 3}
   m_PrefabInstance: {fileID: 1216883383}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1216883385 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3238414029832175495, guid: 8652a4b0d8c9a18469768ae1ffc9a06a, type: 3}
-  m_PrefabInstance: {fileID: 1216883383}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 561dc801a90fbf0468e4ad4616c30808, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Tile
 --- !u!1001 &1218754472
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -24568,7 +24557,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1784016242
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -26556,7 +26545,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1990229504
 Transform:
   m_ObjectHideFlags: 0
@@ -27254,6 +27243,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 511016630745471307, guid: 8652a4b0d8c9a18469768ae1ffc9a06a, type: 3}
   m_PrefabInstance: {fileID: 2027949866}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &2033618101 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3238414029832175495, guid: 8652a4b0d8c9a18469768ae1ffc9a06a, type: 3}
+  m_PrefabInstance: {fileID: 171097722}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 561dc801a90fbf0468e4ad4616c30808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Tile
 --- !u!1001 &2039660795
 PrefabInstance:
   m_ObjectHideFlags: 0
