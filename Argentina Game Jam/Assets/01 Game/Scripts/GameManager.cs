@@ -122,16 +122,13 @@ public class GameManager : MonoBehaviour
         // Avoid retrying if we are mid-transition or already in a stable playing state.
         if (state == TurnState.Busy) return;
 
-        Debug.Log("🔁 RETRY LEVEL");
-
         // Reset run state (rules/runtime) but keep currentLevelIndex
         state = TurnState.PlayerTurn;
         heat = startingHeat;
         consecutiveBurnCount = 0;
         actionsLeft = actionsPerTurn;
 
-        // Rebuild the active level (this should call BuildFromLevelRoot inside)
-        // SetActiveLevel(currentLevelIndex);
+        SaveEnemyInitialData();
 
         // Reset enemies (spawn/pos/hp) AFTER the level is set (so tiles dictionary is correct)
         ResetEnemies();
@@ -163,14 +160,28 @@ public class GameManager : MonoBehaviour
 
             data.enemy.ResetEnemy(data.initialHealth);
 
-            if (data.initialTile != null)
-                data.enemy.SnapToTile(data.initialTile);
+            // ✅ Preferimos el tile guardado por GameManager
+            Tile spawnTile = data.initialTile;
+
+            // ✅ Fallback 1: el initialTile interno del EnemyUnit (si lo usas)
+            if (spawnTile == null)
+                spawnTile = data.enemy.initialTile;
+
+            // ✅ Fallback 2: si sigue null, intenta resolver por posición (opcional)
+            if (spawnTile == null && BoardManager.Instance != null)
+                spawnTile = BoardManager.Instance.GetTile(new Vector2Int(Mathf.RoundToInt(data.enemy.transform.position.x), Mathf.RoundToInt(data.enemy.transform.position.z))); // si tienes overload (si no, ignora)
+
+            if (spawnTile != null)
+                data.enemy.SnapToTile(spawnTile);
+            else
+                Debug.LogWarning($"[ResetEnemies] {data.enemy.name} has no spawn tile (currentTile will be NULL).");
 
             enemies.Add(data.enemy);
         }
 
         Debug.Log($"Reset: {enemies.Count} enemies restored.");
     }
+
 
     // ---------------- TURN FLOW ----------------
 
@@ -339,6 +350,18 @@ public class GameManager : MonoBehaviour
 
         enemies.Clear();
         enemies.AddRange(level.enemies);
+
+        foreach (var e in enemies)
+        {
+            if (e == null) continue;
+            if (e.currentTile != null) continue;
+
+            // Si tienes alguna forma de obtener tile desde posición:
+            e.currentTile = BoardManager.Instance.GetTile(new Vector2Int(Mathf.RoundToInt(e.transform.position.x), Mathf.RoundToInt(e.transform.position.z)));
+
+            // o al menos log para detectar el caso
+            Debug.LogWarning($"[LoadLevel] Enemy {e.name} has currentTile NULL before SaveEnemyInitialData.");
+        }
 
         SaveEnemyInitialData();
 
@@ -567,7 +590,7 @@ public class GameManager : MonoBehaviour
     {
         if (heat >= maxHeat)
         {
-            Lose("Game Over: Heat limit reached!");
+            Lose("Hace demasiado Calor!");
             return true;
         }
         return false;
@@ -583,8 +606,6 @@ public class GameManager : MonoBehaviour
         GameLost?.Invoke(msg);
 
         if (inputManager) inputManager.enabled = false;
-
-        Debug.Log($"Defeat: {msg}");
     }
 
     private void HandleGoalReached(string msg)

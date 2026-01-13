@@ -42,5 +42,11 @@ public class UILosePanel : MonoBehaviour
             GameManager.Instance?.RetryLevel();
         }
     }
+
+    public void OnMainMenuPressed()
+    {
+        Hide();
+        SceneManager.LoadScene(0);
+    }
 }
 

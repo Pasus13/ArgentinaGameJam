@@ -22,6 +22,7 @@ public class EnemyUnit : MonoBehaviour
 
     [Header("Runtime")]
     public Tile currentTile;
+    public Tile initialTile;
     public bool IsDead => health <= 0;
 
     [Header("Debug")]
@@ -52,6 +53,7 @@ public class EnemyUnit : MonoBehaviour
         {
             Debug.LogWarning($"EnemyUnit '{name}' has no children. Visual mesh should be a child GameObject.");
         }
+        initialTile = currentTile;
     }
 
     private void Start()
@@ -62,6 +64,8 @@ public class EnemyUnit : MonoBehaviour
             SnapToTile(currentTile);
 
         footsStepScript = GetComponent<FootstepEmitter>();
+
+        
     }
 
     public void SnapToTile(Tile tile)
@@ -99,8 +103,6 @@ public class EnemyUnit : MonoBehaviour
         {
             _animController.ResetToIdle();
         }
-
-        DebugLog($"Enemy '{name}' reset with {health} HP. Turn frequency: {StepsPerTurn}");
     }
 
     public IEnumerator TakeTurnCoroutine()

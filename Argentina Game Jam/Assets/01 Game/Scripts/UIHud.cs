@@ -21,7 +21,7 @@ public class UIHud : MonoBehaviour
     public void RefreshHeat(int heat, int maxHeat)
     {
         if (heatText == null) return;
-        heatText.text = $"Heat: {heat}/{maxHeat}";
+        heatText.text = heat.ToString();
     }
 
     public void RefreshActions(int actionsLeft, int actionsPerTurn)

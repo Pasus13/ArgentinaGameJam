@@ -39,5 +39,10 @@ public class UILevelFinishedPanel : MonoBehaviour
         Hide();
         LevelTransitionManager.Instance.NextLevelFromPanel();
     }
+    public void OnMainMenuPressed()
+    {
+        Hide();
+        SceneManager.LoadScene(0);
+    }
 }
 
