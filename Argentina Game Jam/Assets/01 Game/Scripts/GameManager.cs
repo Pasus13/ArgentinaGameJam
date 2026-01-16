@@ -72,8 +72,7 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        enemies.Clear();
-        enemies.AddRange(FindObjectsByType<EnemyUnit>(FindObjectsSortMode.None));
+        FillEnemiesArray();
 
         // ✅ IMPORTANTE: Dar tiempo a que los enemigos ejecuten su Start() y AutoAssignTile()
         StartCoroutine(InitializeAfterEnemies());
@@ -269,10 +268,6 @@ public class GameManager : MonoBehaviour
             if (enemy == null || enemy.IsDead) continue;
 
             processedCount++;
-            Debug.Log($"┌─────────────────────────────────────┐");
-            Debug.Log($"│ Enemy {processedCount}/{aliveCount}: {enemy.name}");
-            Debug.Log($"│ Steps per Turn: {enemy.StepsPerTurn} step(s)");
-            Debug.Log($"└─────────────────────────────────────┘");
 
             yield return enemy.TakeTurnCoroutine();
 
@@ -290,8 +285,32 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator InitializeAfterEnemies()
     {
-        // Esperar un frame para que todos los Start() de los enemigos se ejecuten
+        Debug.Log("[GameManager] Waiting for enemies and tiles to initialize...");
+
+        // Esperar 2 frames para que:
+        // Frame 1: Awake de enemigos y LevelDefinition
+        // Frame 2: Start de enemigos (AutoAssignTile)
         yield return null;
+        yield return null;
+
+        Debug.Log($"[GameManager] enemies.Count before SaveInitialData: {enemies.Count}");
+
+        // Verificar que todos los enemigos tienen tiles asignados
+        int enemiesWithoutTiles = 0;
+        foreach (var enemy in enemies)
+        {
+            if (enemy != null && (enemy.currentTile == null || enemy.initalTile == null))
+            {
+                Debug.LogWarning($"⚠️ Enemy {enemy.name} does NOT have tiles assigned! Forcing assignment...");
+                enemy.AutoAssignTile();
+                enemiesWithoutTiles++;
+            }
+        }
+
+        if (enemiesWithoutTiles > 0)
+        {
+            Debug.LogWarning($"⚠️ {enemiesWithoutTiles} enemies had missing tiles (now fixed)");
+        }
 
         SaveEnemyInitialData();
         ResetRun();
@@ -354,6 +373,7 @@ public class GameManager : MonoBehaviour
 
         enemies.Clear();
         enemies.AddRange(level.enemies);
+        Debug.Log("Test: " + enemies[0]);
 
         // ✅ NUEVO: Auto-asignar tiles a cada enemigo basándose en su posición
         for (int i = 0; i < enemies.Count; i++)
@@ -572,6 +592,29 @@ public class GameManager : MonoBehaviour
 
     // ---------------- ENEMIES ----------------
 
+    private void FillEnemiesArray()
+    {
+        enemies.Clear();
+
+        // ✅ Buscar el LevelDefinition activo (solo debería haber uno activo a la vez)
+        LevelDefinition currentLevel = FindFirstObjectByType<LevelDefinition>();
+
+        if (currentLevel != null && currentLevel.gameObject.activeInHierarchy)
+        {
+            currentLevel.EnemiesDetection();
+            enemies.AddRange(currentLevel.enemies);
+            Debug.Log($"✅ [GameManager] Loaded {enemies.Count} enemies from active level '{currentLevel.name}'");
+            return;
+        }
+
+        // ✅ Fallback: buscar directamente en escena
+        Debug.LogWarning("[GameManager] No active LevelDefinition found. Searching for enemies directly...");
+        enemies.AddRange(FindObjectsByType<EnemySleeper>(FindObjectsSortMode.None));
+        enemies.AddRange(FindObjectsByType<EnemyChaser>(FindObjectsSortMode.None));
+        enemies.AddRange(FindObjectsByType<EnemyBoss>(FindObjectsSortMode.None));
+        Debug.Log($"✅ [GameManager] Found {enemies.Count} enemies in scene (direct search)");
+    }
+
     public bool IsTileOccupiedByEnemy(Tile tile)
     {
         for (int i = 0; i < enemies.Count; i++)
@@ -600,7 +643,7 @@ public class GameManager : MonoBehaviour
         return false;
     }
 
-    private void Lose(string msg)
+    public void Lose(string msg)
     {
         player.GetComponent<PlayerAnimationController>()?.PlayDeath();
 

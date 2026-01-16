@@ -2,16 +2,16 @@ using System.Collections;
 using UnityEngine;
 
 [RequireComponent(typeof(EnemyActions))]
-public class EnemyUnit : MonoBehaviour
+public abstract class EnemyUnit : MonoBehaviour, IEnemy
 {
     [Header("Stats")]
     public int health;
     public int initialHealth;
     public Vector3 initialPos;
 
-    [Header("Turn Frequency")]
-    [Tooltip("Cada cuántos turnos este enemigo toma acción (1 = cada turno, 2 = cada 2 turnos, etc.)")]
-    public int StepsPerTurn = 1;
+    [Header("Turn Behavior")]
+    [Tooltip("Número de pasos que da este enemigo por turno (0 = no se mueve)")]
+    public int stepsPerTurn = 1;
 
     [Header("Attack")]
     public int attackHeatDamage = 5;
@@ -29,16 +29,23 @@ public class EnemyUnit : MonoBehaviour
     [Header("Debug")]
     public bool showDebugLogs = true;
 
-    private GameObject _visualMesh;
-    private EnemyActions _actions;
-    private EnemyAnimationController _animController;
-
-    private bool _isExecutingTurn;
-    private FootstepEmitter footsStepScript;
+    protected GameObject _visualMesh;
+    protected EnemyActions _actions;
+    protected EnemyAnimationController _animController;
+    protected bool _isExecutingTurn;
+    protected FootstepEmitter footsStepScript;
 
     public bool IsDead => health <= 0;
 
-    private void Awake()
+    // ✅ NUEVO: Propiedades de la interfaz
+    public int Health => health;
+    public int InitialHealth => initialHealth;
+    public Tile CurrentTile => currentTile;
+    public Tile InitialTile => initalTile;
+    public Transform Transform => transform;
+    public GameObject GameObject => gameObject;
+
+    protected virtual void Awake()
     {
         _actions = GetComponent<EnemyActions>();
         _animController = GetComponent<EnemyAnimationController>();
@@ -52,24 +59,22 @@ public class EnemyUnit : MonoBehaviour
         {
             _visualMesh = transform.GetChild(0).gameObject;
         }
-        else
-        {
-            Debug.LogWarning($"EnemyUnit '{name}' has no children. Visual mesh should be a child GameObject.");
-        }
 
-        // ✅ MOVER AQUÍ: Asignar tile y posición inicial en Awake
         initialPos = transform.position;
         health = initialHealth;
     }
 
-    private void Start()
+    protected virtual void Start()
     {
         footsStepScript = GetComponent<FootstepEmitter>();
 
-        // ✅ Auto-asignar el tile más cercano
-        AutoAssignTile();
+        // ✅ Asegurar que el tile está asignado (por si BoardManager no existía en Awake)
+        if (currentTile == null || initalTile == null)
+        {
+            AutoAssignTile();
+        }
 
-        Debug.Log($"[{name}] Initial Tile assigned: {initalTile?.gridPos}");
+        DebugLog($"Initial Tile assigned: {initalTile?.gridPos}");
     }
 
     public void TakeDamage(int amount)
@@ -96,6 +101,15 @@ public class EnemyUnit : MonoBehaviour
         {
             _animController.ResetToIdle();
         }
+
+        // Permitir que las clases derivadas sobrescriban comportamiento adicional
+        OnResetEnemy();
+    }
+
+    // ✅ Método virtual para que las clases derivadas puedan agregar lógica de reset
+    protected virtual void OnResetEnemy()
+    {
+        // Las clases derivadas pueden sobrescribir esto
     }
 
     public IEnumerator TakeTurnCoroutine()
@@ -112,120 +126,82 @@ public class EnemyUnit : MonoBehaviour
             yield break;
         }
 
-        // 0 = no se mueve nunca
-        // 1 = 1 paso
-        // 2 = 2 pasos
-        int stepsThisTurn = Mathf.Max(0, StepsPerTurn);
+        _isExecutingTurn = true;
 
-        if (stepsThisTurn == 0)
-        {
-            DebugLog("TurnFrequency=0 -> enemy does NOT move this turn.");
-            yield return new WaitForSeconds(0.05f);
-            yield break;
-        }
+        // Ejecutar comportamiento específico de cada tipo de enemigo
+        yield return DecideBehavior();
 
+        _isExecutingTurn = false;
+    }
+
+    // ✅ MÉTODO ABSTRACTO: Cada tipo de enemigo lo implementa
+    protected abstract IEnumerator DecideBehavior();
+
+    // ✅ MÉTODO HELPER: Mover un paso usando A*
+    protected IEnumerator MoveOneStepTowardsPlayer()
+    {
         if (currentTile == null)
         {
-            DebugLog("ERROR: currentTile is NULL. Cannot take turn.");
+            DebugLog("ERROR: currentTile is NULL.");
             yield break;
         }
 
         var gm = GameManager.Instance;
         if (gm == null)
         {
-            DebugLog("ERROR: GameManager.Instance is NULL. Cannot take turn.");
+            DebugLog("ERROR: GameManager.Instance is NULL.");
             yield break;
         }
 
         var player = gm.player;
         if (player == null || player.currentTile == null)
         {
-            DebugLog("ERROR: Player or Player.currentTile is NULL. Cannot take turn.");
+            DebugLog("ERROR: Player or Player.currentTile is NULL.");
             yield break;
         }
 
-        if (_actions == null)
+        Vector2Int myPos = currentTile.gridPos;
+        Vector2Int playerPos = player.currentTile.gridPos;
+
+        bool IsBlocked(Vector2Int pos)
         {
-            DebugLog("ERROR: EnemyActions component is missing. Cannot take turn.");
-            yield break;
+            Tile t = BoardManager.Instance.GetTile(pos);
+            return t != null && IsTileOccupiedByOtherEnemy(t);
         }
 
-        _isExecutingTurn = true;
-
-        // Para evitar loops raros si algo falla
-        int executedSteps = 0;
-
-        while (executedSteps < stepsThisTurn)
+        if (AStarPathfinder.TryGetNextStepTowardPlayerAdj(
+                start: myPos,
+                playerPos: playerPos,
+                isBlocked: IsBlocked,
+                nextStep: out Vector2Int nextStep,
+                pathLength: out int pathLen))
         {
-            // Si ya no tenemos tile actual válida, abort
-            if (currentTile == null)
+            // Seguridad: nunca moverse al tile del player
+            if (nextStep == playerPos)
             {
-                DebugLog("ERROR: currentTile became NULL mid-turn.");
-                break;
+                DebugLog("Safety: nextStep equals playerPos. Aborting movement.");
+                yield break;
             }
 
-            Vector2Int myPos = currentTile.gridPos;
-            Vector2Int playerPos = player.currentTile.gridPos;
-
-            // Si ya está adyacente en 4D, NO atacamos.
-            // Puedes elegir: o se queda quieto, o intenta reposicionarse.
-            // Para tu idea de "tag al final del turno del jugador", lo más coherente es: se queda quieto.
-            if (BoardManager.Instance != null && BoardManager.Instance.AreAdjacent4D(myPos, playerPos))
+            Tile nextTile = BoardManager.Instance.GetTile(nextStep);
+            if (nextTile != null)
             {
-                DebugLog("Adjacent to player (4D) -> no attack. Staying still.");
-                break;
-            }
-
-            bool IsBlocked(Vector2Int pos)
-            {
-                Tile t = BoardManager.Instance.GetTile(pos);
-                return t != null && IsTileOccupiedByOtherEnemy(t);
-            }
-
-            if (AStarPathfinder.TryGetNextStepTowardPlayerAdj(
-                    start: myPos,
-                    playerPos: playerPos,
-                    isBlocked: IsBlocked,
-                    nextStep: out Vector2Int nextStep,
-                    pathLength: out int pathLen))
-            {
-                // Seguridad extra: nunca moverse al tile del player
-                if (nextStep == playerPos)
-                {
-                    DebugLog("Safety: nextStep equals playerPos. Aborting movement.");
-                    break;
-                }
-
-                Tile nextTile = BoardManager.Instance.GetTile(nextStep);
-                if (nextTile != null)
-                {
-                    DebugLog($"Step {executedSteps + 1}/{stepsThisTurn} -> Moving to {nextStep} (pathLen={pathLen})");
-                    yield return _actions.MoveToTileCoroutine(nextTile);
-                    footsStepScript.Step();
-                    executedSteps++;
-
-                    // mini pausa visual entre pasos si hace 2 pasos
-                    if (executedSteps < stepsThisTurn)
-                        yield return new WaitForSeconds(0.05f);
-                }
-                else
-                {
-                    DebugLog("ERROR: Next step tile resolved to NULL. Stopping.");
-                    break;
-                }
+                DebugLog($"Moving to {nextStep} (pathLen={pathLen})");
+                yield return _actions.MoveToTileCoroutine(nextTile);
+                footsStepScript?.Step();
             }
             else
             {
-                DebugLog("No valid A* move found. Stopping.");
-                break;
+                DebugLog("ERROR: Next step tile resolved to NULL.");
             }
         }
-
-        DebugLog($"Turn end. Steps executed: {executedSteps}/{stepsThisTurn}");
-        _isExecutingTurn = false;
+        else
+        {
+            DebugLog("No valid A* move found.");
+        }
     }
 
-    private bool IsTileOccupiedByOtherEnemy(Tile tile)
+    protected bool IsTileOccupiedByOtherEnemy(Tile tile)
     {
         var gm = GameManager.Instance;
         if (gm == null || tile == null) return false;
@@ -237,6 +213,19 @@ public class EnemyUnit : MonoBehaviour
         }
 
         return false;
+    }
+
+    protected int GetDistanceToPlayer()
+    {
+        var player = GameManager.Instance?.player;
+        if (player == null || currentTile == null || player.currentTile == null)
+            return 999;
+
+        Vector2Int myPos = currentTile.gridPos;
+        Vector2Int playerPos = player.currentTile.gridPos;
+
+        // Distancia Manhattan (4D)
+        return Mathf.Abs(myPos.x - playerPos.x) + Mathf.Abs(myPos.y - playerPos.y);
     }
 
     public void AutoAssignTile()
@@ -261,8 +250,6 @@ public class EnemyUnit : MonoBehaviour
 
         DebugLog($"AutoAssignTile SUCCESS: assigned to tile {t.gridPos}");
     }
-
-
 
     public void DebugLog(string message)
     {

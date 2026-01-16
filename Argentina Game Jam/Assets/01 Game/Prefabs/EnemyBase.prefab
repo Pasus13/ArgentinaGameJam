@@ -124,12 +124,11 @@ GameObject:
   m_Component:
   - component: {fileID: 5231010840363933286}
   - component: {fileID: 6273050413658974611}
-  - component: {fileID: 8508728889335794781}
   - component: {fileID: 8087155355088968648}
-  - component: {fileID: 7152229246495821706}
-  - component: {fileID: 6059672285492977590}
+  - component: {fileID: 4567095222906884806}
+  - component: {fileID: 7155570405140383359}
   m_Layer: 8
-  m_Name: Enemy
+  m_Name: EnemyBase
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -144,7 +143,7 @@ Transform:
   m_GameObject: {fileID: 8514530121809401585}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2, y: 0, z: 3}
+  m_LocalPosition: {x: 0, y: 0.1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -175,30 +174,6 @@ CapsuleCollider:
   m_Height: 1.75
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &8508728889335794781
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8514530121809401585}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bb2e587c8c94b0149a17533c510d288a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyUnit
-  health: 1
-  initialHealth: 1
-  initialPos: {x: 0, y: 0, z: 0}
-  StepsPerTurn: 1
-  attackHeatDamage: 5
-  attackEffectPrefab: {fileID: 2504214343621411470, guid: 3ed0d324122d7b24eaec75c55c74aafc, type: 3}
-  attackEffectDuration: 5
-  moveSpeed: 4
-  rotationSpeed: 720
-  initalTile: {fileID: 0}
-  currentTile: {fileID: 0}
-  showDebugLogs: 1
 --- !u!114 &8087155355088968648
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -211,8 +186,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1e927a16fa892fd40862e11962f988ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyActions
-  animController: {fileID: 7152229246495821706}
---- !u!114 &7152229246495821706
+  animController: {fileID: 4567095222906884806}
+--- !u!114 &4567095222906884806
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -224,8 +199,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 806f556f8d8b5314d9d3a7134851fa9a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAnimationController
-  animator: {fileID: 2204870899099994533}
---- !u!114 &6059672285492977590
+  animator: {fileID: 0}
+--- !u!114 &7155570405140383359
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

@@ -1,7 +1,6 @@
 using System.Collections;
 using UnityEngine;
 
-[RequireComponent(typeof(EnemyUnit))]
 public class EnemyActions : MonoBehaviour
 {
     [SerializeField] private EnemyAnimationController animController;

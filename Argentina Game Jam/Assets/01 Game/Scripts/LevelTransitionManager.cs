@@ -16,7 +16,7 @@ public class LevelTransitionManager : MonoBehaviour
     [Header("Refs")]
     public GameManager gameManager;
 
-    private int _currentLevelIndex = 0;
+    public int _currentLevelIndex = 0;
 
     // heat con el que se ENTRÓ al nivel actual (para Retry)
     private int _heatAtLevelStart = 0;
