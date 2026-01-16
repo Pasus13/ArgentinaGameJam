@@ -29,7 +29,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0.5, z: 0}
-  m_LocalScale: {x: 0.4, y: 0.4, z: 0.4}
+  m_LocalScale: {x: 0.35, y: 0.35, z: 0.35}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5231010840363933286}
@@ -188,12 +188,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyUnit
   health: 1
+  initialHealth: 1
+  initialPos: {x: 0, y: 0, z: 0}
   StepsPerTurn: 1
   attackHeatDamage: 5
   attackEffectPrefab: {fileID: 2504214343621411470, guid: 3ed0d324122d7b24eaec75c55c74aafc, type: 3}
   attackEffectDuration: 5
   moveSpeed: 4
   rotationSpeed: 720
+  initalTile: {fileID: 0}
   currentTile: {fileID: 0}
   showDebugLogs: 1
 --- !u!114 &8087155355088968648
@@ -252,12 +255,24 @@ PrefabInstance:
       value: 8
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: d70339bcc9f6a784e908cace2b44f7ed, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d70339bcc9f6a784e908cace2b44f7ed, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d70339bcc9f6a784e908cace2b44f7ed, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d70339bcc9f6a784e908cace2b44f7ed, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: d70339bcc9f6a784e908cace2b44f7ed, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: d70339bcc9f6a784e908cace2b44f7ed, type: 3}
       propertyPath: m_LocalPosition.z

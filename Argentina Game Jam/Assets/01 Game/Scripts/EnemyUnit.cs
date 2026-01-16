@@ -5,7 +5,9 @@ using UnityEngine;
 public class EnemyUnit : MonoBehaviour
 {
     [Header("Stats")]
-    public int health = 2;
+    public int health;
+    public int initialHealth;
+    public Vector3 initialPos;
 
     [Header("Turn Frequency")]
     [Tooltip("Cada cuántos turnos este enemigo toma acción (1 = cada turno, 2 = cada 2 turnos, etc.)")]
@@ -20,10 +22,9 @@ public class EnemyUnit : MonoBehaviour
     public float moveSpeed = 4f;
     public float rotationSpeed = 720f;
 
-    [Header("Runtime")]
+    [Header("Tiles")]
+    public Tile initalTile;
     public Tile currentTile;
-    public Tile initialTile;
-    public bool IsDead => health <= 0;
 
     [Header("Debug")]
     public bool showDebugLogs = true;
@@ -34,6 +35,8 @@ public class EnemyUnit : MonoBehaviour
 
     private bool _isExecutingTurn;
     private FootstepEmitter footsStepScript;
+
+    public bool IsDead => health <= 0;
 
     private void Awake()
     {
@@ -53,26 +56,20 @@ public class EnemyUnit : MonoBehaviour
         {
             Debug.LogWarning($"EnemyUnit '{name}' has no children. Visual mesh should be a child GameObject.");
         }
-        initialTile = currentTile;
+
+        // ✅ MOVER AQUÍ: Asignar tile y posición inicial en Awake
+        initialPos = transform.position;
+        health = initialHealth;
     }
 
     private void Start()
     {
-        if (currentTile == null)
-            DebugLog("WARNING: currentTile not set on Start.");
-        else
-            SnapToTile(currentTile);
-
         footsStepScript = GetComponent<FootstepEmitter>();
 
-        
-    }
+        // ✅ Auto-asignar el tile más cercano
+        AutoAssignTile();
 
-    public void SnapToTile(Tile tile)
-    {
-        currentTile = tile;
-        if (tile != null)
-            transform.position = tile.transform.position;
+        Debug.Log($"[{name}] Initial Tile assigned: {initalTile?.gridPos}");
     }
 
     public void TakeDamage(int amount)
@@ -82,22 +79,18 @@ public class EnemyUnit : MonoBehaviour
 
         if (health <= 0)
         {
-            DebugLog("Enemy defeated.");
-            if (GameManager.Instance != null)
-                GameManager.Instance.RemoveEnemy(this);
-
-            if (_visualMesh != null) _visualMesh.SetActive(false);
-            else gameObject.SetActive(false);
+            this.gameObject.SetActive(false);
         }
     }
 
-    public void ResetEnemy(int initialHealth)
+    public void ResetEnemy()
     {
+        gameObject.SetActive(true);
+
         health = initialHealth;
         _isExecutingTurn = false;
-
-        if (_visualMesh != null) _visualMesh.SetActive(true);
-        else gameObject.SetActive(true);
+        transform.position = initialPos;
+        currentTile = initalTile;
 
         if (_animController != null)
         {
@@ -245,6 +238,31 @@ public class EnemyUnit : MonoBehaviour
 
         return false;
     }
+
+    public void AutoAssignTile()
+    {
+        var bm = BoardManager.Instance;
+        if (bm == null)
+        {
+            DebugLog("AutoAssignTile: BoardManager.Instance is null.");
+            return;
+        }
+
+        Tile t = bm.FindClosestTile(transform.position);
+
+        if (t == null)
+        {
+            DebugLog($"AutoAssignTile FAILED: no tile found near position {transform.position}");
+            return;
+        }
+
+        initalTile = t;
+        currentTile = t;
+
+        DebugLog($"AutoAssignTile SUCCESS: assigned to tile {t.gridPos}");
+    }
+
+
 
     public void DebugLog(string message)
     {

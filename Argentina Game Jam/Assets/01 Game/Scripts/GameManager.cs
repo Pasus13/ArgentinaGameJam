@@ -75,8 +75,8 @@ public class GameManager : MonoBehaviour
         enemies.Clear();
         enemies.AddRange(FindObjectsByType<EnemyUnit>(FindObjectsSortMode.None));
 
-        SaveEnemyInitialData();
-        ResetRun();
+        // ✅ IMPORTANTE: Dar tiempo a que los enemigos ejecuten su Start() y AutoAssignTile()
+        StartCoroutine(InitializeAfterEnemies());
     }
 
     private void SaveEnemyInitialData()
@@ -90,8 +90,8 @@ public class GameManager : MonoBehaviour
             _enemyInitialData.Add(new EnemyInitialData
             {
                 enemy = enemy,
-                initialTile = enemy.currentTile,
-                initialHealth = enemy.health
+                initialTile = enemy.initalTile,
+                initialHealth = enemy.initialHealth
             });
         }
 
@@ -108,7 +108,7 @@ public class GameManager : MonoBehaviour
 
         if (player != null && startTile != null)
         {
-            player.SnapToTile(startTile);
+            player.SetPlayerCurrentTile(startTile);
             player.GetComponent<PlayerAnimationController>()?.ResetToIdle();
         }
 
@@ -128,14 +128,12 @@ public class GameManager : MonoBehaviour
         consecutiveBurnCount = 0;
         actionsLeft = actionsPerTurn;
 
-        SaveEnemyInitialData();
-
         // Reset enemies (spawn/pos/hp) AFTER the level is set (so tiles dictionary is correct)
         ResetEnemies();
 
         // Re-snap player to the level start tile
         if (player != null && startTile != null)
-            player.SnapToTile(startTile);
+            player.SetPlayerCurrentTile(startTile);
 
         // Notify UI
         RaiseTurnStateChanged();
@@ -158,21 +156,18 @@ public class GameManager : MonoBehaviour
         {
             if (data.enemy == null) continue;
 
-            data.enemy.ResetEnemy(data.initialHealth);
+            data.enemy.ResetEnemy();
 
             // ✅ Preferimos el tile guardado por GameManager
             Tile spawnTile = data.initialTile;
 
             // ✅ Fallback 1: el initialTile interno del EnemyUnit (si lo usas)
             if (spawnTile == null)
-                spawnTile = data.enemy.initialTile;
+                spawnTile = data.enemy.currentTile;
 
             // ✅ Fallback 2: si sigue null, intenta resolver por posición (opcional)
             if (spawnTile == null && BoardManager.Instance != null)
                 spawnTile = BoardManager.Instance.GetTile(new Vector2Int(Mathf.RoundToInt(data.enemy.transform.position.x), Mathf.RoundToInt(data.enemy.transform.position.z))); // si tienes overload (si no, ignora)
-
-            if (spawnTile != null)
-                data.enemy.SnapToTile(spawnTile);
             else
                 Debug.LogWarning($"[ResetEnemies] {data.enemy.name} has no spawn tile (currentTile will be NULL).");
 
@@ -292,6 +287,17 @@ public class GameManager : MonoBehaviour
 
         StartPlayerTurn();
     }
+
+    private IEnumerator InitializeAfterEnemies()
+    {
+        // Esperar un frame para que todos los Start() de los enemigos se ejecuten
+        yield return null;
+
+        SaveEnemyInitialData();
+        ResetRun();
+
+        Debug.Log("✅ GameManager initialized after enemies.");
+    }
     // ---------------- LEVEL TRANSITION ----------------
     public void SetBusy(bool isBusy)
     {
@@ -339,9 +345,7 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        // 👇 esto es la clave para retry/next
         startingHeat = Mathf.Clamp(heatToStart, 0, maxHeat);
-
         startTile = level.startTile;
         goalTile = level.goalTile;
 
@@ -351,21 +355,21 @@ public class GameManager : MonoBehaviour
         enemies.Clear();
         enemies.AddRange(level.enemies);
 
-        foreach (var e in enemies)
+        // ✅ NUEVO: Auto-asignar tiles a cada enemigo basándose en su posición
+        for (int i = 0; i < enemies.Count; i++)
         {
-            if (e == null) continue;
-            if (e.currentTile != null) continue;
+            if (enemies[i] == null) continue;
 
-            // Si tienes alguna forma de obtener tile desde posición:
-            e.currentTile = BoardManager.Instance.GetTile(new Vector2Int(Mathf.RoundToInt(e.transform.position.x), Mathf.RoundToInt(e.transform.position.z)));
+            // Auto-asignar el tile más cercano
+            enemies[i].AutoAssignTile();
 
-            // o al menos log para detectar el caso
-            Debug.LogWarning($"[LoadLevel] Enemy {e.name} has currentTile NULL before SaveEnemyInitialData.");
+            // Actualizar posición y salud iniciales
+            enemies[i].initialPos = enemies[i].transform.position;
+            enemies[i].health = enemies[i].initialHealth;
         }
 
         SaveEnemyInitialData();
-
-        ResetRun(); // <- cogerá startingHeat como heat inicial
+        ResetRun();
     }
 
     public void LoadLevel(LevelDefinition level)

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public class BoardManager : MonoBehaviour
@@ -15,6 +15,7 @@ public class BoardManager : MonoBehaviour
     [SerializeField] private Transform activeLevelRoot; // debug/inspector
 
     public int TileCount => _tiles.Count;
+    public IEnumerable<Tile> AllTiles => _tiles.Values;
 
     private void Awake()
     {
@@ -88,6 +89,41 @@ public class BoardManager : MonoBehaviour
     // ------------------- API -------------------
     public Tile GetTile(Vector2Int pos)
         => _tiles.TryGetValue(pos, out var t) ? t : null;
+
+    public Tile GetTileFromWorld(Vector3 worldPos)
+    {
+        if (gridOrigin == null) return null;
+
+        // Si tu grid usa X/Z (3D isométrico), esto es lo normal:
+        Vector3 local = worldPos - gridOrigin.position;
+
+        int gx = Mathf.RoundToInt(local.x / cellSize);
+        int gy = Mathf.RoundToInt(local.z / cellSize);
+
+        return GetTile(new Vector2Int(gx, gy));
+    }
+
+    public Tile FindClosestTile(Vector3 worldPosition)
+    {
+        Tile closest = null;
+        float minSqrDistance = float.MaxValue;
+
+        foreach (Tile tile in _tiles.Values)
+        {
+            if (tile == null) continue;
+
+            float sqrDist = (tile.transform.position - worldPosition).sqrMagnitude;
+
+            if (sqrDist < minSqrDistance)
+            {
+                minSqrDistance = sqrDist;
+                closest = tile;
+            }
+        }
+
+        return closest;
+    }
+
 
     public bool AreAdjacent4D(Vector2Int a, Vector2Int b)
     {

@@ -31,16 +31,7 @@ public class UILosePanel : MonoBehaviour
     public void OnRetryPressed()
     {
         Hide();
-
-        if (LevelTransitionManager.Instance != null)
-        {
-            LevelTransitionManager.Instance.RetryLevelFromPanel();
-        }
-        else
-        {
-            Debug.LogWarning("LevelTransitionManager.Instance is null. Fallback to GameManager retry.");
-            GameManager.Instance?.RetryLevel();
-        }
+        LevelTransitionManager.Instance.RetryLevelFromPanel();
     }
 
     public void OnMainMenuPressed()
