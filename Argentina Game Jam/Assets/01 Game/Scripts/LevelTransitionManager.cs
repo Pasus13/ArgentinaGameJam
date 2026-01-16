@@ -73,7 +73,7 @@ public class LevelTransitionManager : MonoBehaviour
 
         // Activar solo el primero
         _currentLevelIndex = Mathf.Clamp(_currentLevelIndex, 0, levels.Count - 1);
-        SetOnlyThisLevelActive(_currentLevelIndex);
+
 
         // Guardar heat inicial del nivel (al inicio del juego normalmente 0)
         _heatAtLevelStart = gameManager != null ? gameManager.heat : 0;
@@ -148,19 +148,56 @@ public class LevelTransitionManager : MonoBehaviour
             return;
         }
 
-        var level = levels[index];
-
         SetOnlyThisLevelActive(index);
+
+        var level = levels[index];
         AlignLevelToGridOrigin(level);
+
+        // ✅ CRÍTICO: Construir el board ANTES de auto-asignar tiles a enemigos
+        if (BoardManager.Instance != null)
+            BoardManager.Instance.BuildFromLevelRoot(level.transform);
 
         if (recordStartHeat)
             _heatAtLevelStart = heatToStart;
 
-        // Cargar el nivel con el heat que toca
+        // Ahora sí, cargar el nivel (que auto-asignará tiles)
         if (gameManager == null) gameManager = GameManager.Instance;
         gameManager?.LoadLevel(level, heatToStart);
 
-        Debug.Log($"[LevelTransitionManager] Loaded level {index} with heat {heatToStart} (heatAtLevelStart={_heatAtLevelStart})");
+        Debug.Log($"[LevelTransitionManager] Loaded level {index} with heat {heatToStart}");
+    }
+
+    private void AlignLevelToGridOrigin(LevelDefinition level)
+    {
+        if (level == null)
+        {
+            Debug.LogWarning("[AlignLevelToGridOrigin] Level is null.");
+            return;
+        }
+
+        if (BoardManager.Instance == null || BoardManager.Instance.gridOrigin == null)
+        {
+            Debug.LogWarning("[AlignLevelToGridOrigin] BoardManager or gridOrigin is missing.");
+            return;
+        }
+
+        // Root del nivel
+        Transform levelRoot = level.transform;
+
+        // Anchor: si existe usamos el anchor del LevelDefinition,
+        // si no, usamos el propio root como fallback
+        Transform anchor = level.anchor != null ? level.anchor : levelRoot;
+
+        // Queremos que el anchor coincida con el gridOrigin
+        Vector3 targetPosition = BoardManager.Instance.gridOrigin.position;
+
+        // Delta necesario para mover todo el nivel
+        Vector3 delta = targetPosition - anchor.position;
+
+        // Aplicamos el desplazamiento al root del nivel
+        levelRoot.position += delta;
+
+        Debug.Log($"[AlignLevelToGridOrigin] Level '{level.name}' aligned to grid origin.");
     }
 
     private void SetOnlyThisLevelActive(int activeIndex)
@@ -172,19 +209,6 @@ public class LevelTransitionManager : MonoBehaviour
         }
     }
 
-    private void AlignLevelToGridOrigin(LevelDefinition level)
-    {
-        if (level == null) return;
-        if (BoardManager.Instance == null || BoardManager.Instance.gridOrigin == null) return;
-
-        Transform levelRoot = level.transform;
-        Transform anchor = level.anchor != null ? level.anchor : levelRoot;
-
-        Vector3 target = BoardManager.Instance.gridOrigin.position;
-        Vector3 delta = target - anchor.position;
-
-        levelRoot.position += delta;
-    }
 
     // ---------------- EVENTS ----------------
 

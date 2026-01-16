@@ -94,6 +94,8 @@ public class HeatFeedback : MonoBehaviour
         if (fireVfxCanvasGroup != null)
             fireVfxCanvasGroup.alpha = 0f;
 
+        fireLoopSource = AudioManager.Instance.sfxSourceLoop;
+
         if (fireLoopSource != null)
         {
             fireLoopSource.volume = 0f;

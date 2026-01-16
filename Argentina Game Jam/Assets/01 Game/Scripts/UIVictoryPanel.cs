@@ -21,7 +21,8 @@ public class UIVictoryPanel : MonoBehaviour
 
     public void OnMainMenuPressed()
     {
-        // SceneManager.LoadScene("MainMenu");
+        Hide();
+         SceneManager.LoadScene(0);
     }
 
     public void OnRetryPressed()

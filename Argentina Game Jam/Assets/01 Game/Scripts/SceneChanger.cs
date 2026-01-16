@@ -27,7 +27,7 @@ public class SceneChanger : MonoBehaviour
         }
     }
 
-    private void BackToMainMenu()
+    private void LoadMainMenu()
     {
         SceneManager.LoadScene(0);
     }

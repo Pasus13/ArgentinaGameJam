@@ -19,14 +19,6 @@ public class PlayerController : MonoBehaviour
     {
         footsStepScript = this.GetComponent<FootstepEmitter>();
     }
-    public void SnapToTile(Tile tile)
-    {
-        currentTile = tile;
-        if (tile)
-        {
-            transform.position = tile.transform.position;
-        }
-    }
 
     public void TryMoveTo(Tile target)
     {
@@ -105,5 +97,10 @@ public class PlayerController : MonoBehaviour
         GameManager.Instance.OnPlayerEnteredTile(target);
 
         _isMoving = false;
+    }
+
+    public void SetPlayerCurrentTile(Tile tile)
+    {
+        currentTile = tile;
     }
 }

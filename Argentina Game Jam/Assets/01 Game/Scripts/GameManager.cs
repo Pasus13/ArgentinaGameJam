@@ -75,8 +75,8 @@ public class GameManager : MonoBehaviour
         enemies.Clear();
         enemies.AddRange(FindObjectsByType<EnemyUnit>(FindObjectsSortMode.None));
 
-        SaveEnemyInitialData();
-        ResetRun();
+        // ✅ IMPORTANTE: Dar tiempo a que los enemigos ejecuten su Start() y AutoAssignTile()
+        StartCoroutine(InitializeAfterEnemies());
     }
 
     private void SaveEnemyInitialData()
@@ -90,8 +90,8 @@ public class GameManager : MonoBehaviour
             _enemyInitialData.Add(new EnemyInitialData
             {
                 enemy = enemy,
-                initialTile = enemy.currentTile,
-                initialHealth = enemy.health
+                initialTile = enemy.initalTile,
+                initialHealth = enemy.initialHealth
             });
         }
 
@@ -108,7 +108,7 @@ public class GameManager : MonoBehaviour
 
         if (player != null && startTile != null)
         {
-            player.SnapToTile(startTile);
+            player.SetPlayerCurrentTile(startTile);
             player.GetComponent<PlayerAnimationController>()?.ResetToIdle();
         }
 
@@ -122,23 +122,18 @@ public class GameManager : MonoBehaviour
         // Avoid retrying if we are mid-transition or already in a stable playing state.
         if (state == TurnState.Busy) return;
 
-        Debug.Log("🔁 RETRY LEVEL");
-
         // Reset run state (rules/runtime) but keep currentLevelIndex
         state = TurnState.PlayerTurn;
         heat = startingHeat;
         consecutiveBurnCount = 0;
         actionsLeft = actionsPerTurn;
 
-        // Rebuild the active level (this should call BuildFromLevelRoot inside)
-        // SetActiveLevel(currentLevelIndex);
-
         // Reset enemies (spawn/pos/hp) AFTER the level is set (so tiles dictionary is correct)
         ResetEnemies();
 
         // Re-snap player to the level start tile
         if (player != null && startTile != null)
-            player.SnapToTile(startTile);
+            player.SetPlayerCurrentTile(startTile);
 
         // Notify UI
         RaiseTurnStateChanged();
@@ -161,16 +156,27 @@ public class GameManager : MonoBehaviour
         {
             if (data.enemy == null) continue;
 
-            data.enemy.ResetEnemy(data.initialHealth);
+            data.enemy.ResetEnemy();
 
-            if (data.initialTile != null)
-                data.enemy.SnapToTile(data.initialTile);
+            // ✅ Preferimos el tile guardado por GameManager
+            Tile spawnTile = data.initialTile;
+
+            // ✅ Fallback 1: el initialTile interno del EnemyUnit (si lo usas)
+            if (spawnTile == null)
+                spawnTile = data.enemy.currentTile;
+
+            // ✅ Fallback 2: si sigue null, intenta resolver por posición (opcional)
+            if (spawnTile == null && BoardManager.Instance != null)
+                spawnTile = BoardManager.Instance.GetTile(new Vector2Int(Mathf.RoundToInt(data.enemy.transform.position.x), Mathf.RoundToInt(data.enemy.transform.position.z))); // si tienes overload (si no, ignora)
+            else
+                Debug.LogWarning($"[ResetEnemies] {data.enemy.name} has no spawn tile (currentTile will be NULL).");
 
             enemies.Add(data.enemy);
         }
 
         Debug.Log($"Reset: {enemies.Count} enemies restored.");
     }
+
 
     // ---------------- TURN FLOW ----------------
 
@@ -281,6 +287,17 @@ public class GameManager : MonoBehaviour
 
         StartPlayerTurn();
     }
+
+    private IEnumerator InitializeAfterEnemies()
+    {
+        // Esperar un frame para que todos los Start() de los enemigos se ejecuten
+        yield return null;
+
+        SaveEnemyInitialData();
+        ResetRun();
+
+        Debug.Log("✅ GameManager initialized after enemies.");
+    }
     // ---------------- LEVEL TRANSITION ----------------
     public void SetBusy(bool isBusy)
     {
@@ -328,9 +345,7 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        // 👇 esto es la clave para retry/next
         startingHeat = Mathf.Clamp(heatToStart, 0, maxHeat);
-
         startTile = level.startTile;
         goalTile = level.goalTile;
 
@@ -340,9 +355,21 @@ public class GameManager : MonoBehaviour
         enemies.Clear();
         enemies.AddRange(level.enemies);
 
-        SaveEnemyInitialData();
+        // ✅ NUEVO: Auto-asignar tiles a cada enemigo basándose en su posición
+        for (int i = 0; i < enemies.Count; i++)
+        {
+            if (enemies[i] == null) continue;
 
-        ResetRun(); // <- cogerá startingHeat como heat inicial
+            // Auto-asignar el tile más cercano
+            enemies[i].AutoAssignTile();
+
+            // Actualizar posición y salud iniciales
+            enemies[i].initialPos = enemies[i].transform.position;
+            enemies[i].health = enemies[i].initialHealth;
+        }
+
+        SaveEnemyInitialData();
+        ResetRun();
     }
 
     public void LoadLevel(LevelDefinition level)
@@ -567,7 +594,7 @@ public class GameManager : MonoBehaviour
     {
         if (heat >= maxHeat)
         {
-            Lose("Game Over: Heat limit reached!");
+            Lose("Hace demasiado Calor!");
             return true;
         }
         return false;
@@ -583,8 +610,6 @@ public class GameManager : MonoBehaviour
         GameLost?.Invoke(msg);
 
         if (inputManager) inputManager.enabled = false;
-
-        Debug.Log($"Defeat: {msg}");
     }
 
     private void HandleGoalReached(string msg)
