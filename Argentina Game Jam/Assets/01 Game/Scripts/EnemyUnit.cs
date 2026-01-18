@@ -47,8 +47,7 @@ public abstract class EnemyUnit : MonoBehaviour, IEnemy
 
     protected virtual void Awake()
     {
-        _actions = GetComponent<EnemyActions>();
-        _animController = GetComponent<EnemyAnimationController>();
+
 
         if (_animController == null)
         {
@@ -62,19 +61,19 @@ public abstract class EnemyUnit : MonoBehaviour, IEnemy
 
         initialPos = transform.position;
         health = initialHealth;
+        // ✅ Asegurar que el tile está asignado (por si BoardManager no existía en Awake)
+        if (currentTile == null)
+        {
+            AssignCurrentTile();
+            AssignInitialTile();
+        }
     }
 
     protected virtual void Start()
     {
         footsStepScript = GetComponent<FootstepEmitter>();
-
-        // ✅ Asegurar que el tile está asignado (por si BoardManager no existía en Awake)
-        if (currentTile == null || initalTile == null)
-        {
-            AutoAssignTile();
-        }
-
-        DebugLog($"Initial Tile assigned: {initalTile?.gridPos}");
+        _actions = GetComponent<EnemyActions>();
+        _animController = GetComponent<EnemyAnimationController>();
     }
 
     public void TakeDamage(int amount)
@@ -91,18 +90,24 @@ public abstract class EnemyUnit : MonoBehaviour, IEnemy
     public void ResetEnemy()
     {
         gameObject.SetActive(true);
-
         health = initialHealth;
         _isExecutingTurn = false;
-        transform.position = initialPos;
-        currentTile = initalTile;
 
-        if (_animController != null)
+        // ✅ Usar el tile inicial
+        if (initalTile != null)
         {
-            _animController.ResetToIdle();
+            transform.position = initalTile.transform.position;
+            currentTile = initalTile;
+        }
+        else
+        {
+            transform.position = initalTile.transform.position;
+            currentTile = initalTile;
         }
 
-        // Permitir que las clases derivadas sobrescriban comportamiento adicional
+        if (_animController != null)
+            _animController.ResetToIdle();
+
         OnResetEnemy();
     }
 
@@ -228,7 +233,7 @@ public abstract class EnemyUnit : MonoBehaviour, IEnemy
         return Mathf.Abs(myPos.x - playerPos.x) + Mathf.Abs(myPos.y - playerPos.y);
     }
 
-    public void AutoAssignTile()
+    public void AssignCurrentTile()
     {
         var bm = BoardManager.Instance;
         if (bm == null)
@@ -244,11 +249,26 @@ public abstract class EnemyUnit : MonoBehaviour, IEnemy
             DebugLog($"AutoAssignTile FAILED: no tile found near position {transform.position}");
             return;
         }
-
-        initalTile = t;
         currentTile = t;
+    }
 
-        DebugLog($"AutoAssignTile SUCCESS: assigned to tile {t.gridPos}");
+    public void AssignInitialTile()
+    {
+        var bm = BoardManager.Instance;
+        if (bm == null)
+        {
+            DebugLog("AutoAssignTile: BoardManager.Instance is null.");
+            return;
+        }
+
+        Tile t = bm.FindClosestTile(transform.position);
+
+        if (t == null)
+        {
+            DebugLog($"AutoAssignTile FAILED: no tile found near position {transform.position}");
+            return;
+        }
+        initalTile = t;
     }
 
     public void DebugLog(string message)

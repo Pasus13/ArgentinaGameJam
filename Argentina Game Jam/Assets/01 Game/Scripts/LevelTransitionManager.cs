@@ -162,6 +162,7 @@ public class LevelTransitionManager : MonoBehaviour
 
         // Ahora sí, cargar el nivel (que auto-asignará tiles)
         if (gameManager == null) gameManager = GameManager.Instance;
+
         gameManager?.LoadLevel(level, heatToStart);
 
         Debug.Log($"[LevelTransitionManager] Loaded level {index} with heat {heatToStart}");

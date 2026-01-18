@@ -27,13 +27,6 @@ public class LevelDefinition : MonoBehaviour
         Debug.Log($"✅ [LevelDefinition '{name}'] Awake complete - {enemies.Length} enemies ready");
     }
 
-    private void Start()
-    {
-        // ✅ IMPORTANTE: Asegurarse de que todos los tiles están asignados
-        // Esto se ejecuta DESPUÉS de que BoardManager construya el grid
-        EnsureEnemyTilesAssigned();
-    }
-
     public void EnemiesDetection()
     {
         // ✅ Si ya están detectados, no volver a buscar
@@ -61,46 +54,6 @@ public class LevelDefinition : MonoBehaviour
         }
     }
 
-    // ✅ NUEVO MÉTODO: Asegurar que todos los enemigos tienen tiles asignados
-    private void EnsureEnemyTilesAssigned()
-    {
-        if (enemies == null || enemies.Length == 0)
-        {
-            Debug.LogWarning($"[LevelDefinition '{name}'] No enemies to assign tiles to.");
-            return;
-        }
-
-        Debug.Log($"[LevelDefinition '{name}'] Ensuring tiles are assigned to {enemies.Length} enemies...");
-
-        foreach (var enemy in enemies)
-        {
-            if (enemy == null)
-            {
-                Debug.LogWarning($"[LevelDefinition '{name}'] Found null enemy in array!");
-                continue;
-            }
-
-            // Si el enemigo no tiene tile asignado, forzar asignación
-            if (enemy.currentTile == null || enemy.initalTile == null)
-            {
-                Debug.Log($"   - Assigning tile to {enemy.name}...");
-                enemy.AutoAssignTile();
-
-                if (enemy.currentTile != null)
-                {
-                    Debug.Log($"   ✅ {enemy.name} assigned to tile {enemy.currentTile.gridPos}");
-                }
-                else
-                {
-                    Debug.LogError($"   ❌ {enemy.name} FAILED to assign tile!");
-                }
-            }
-            else
-            {
-                Debug.Log($"   ✅ {enemy.name} already has tile: {enemy.currentTile.gridPos}");
-            }
-        }
-    }
 
     // ✅ Método público para forzar reasignación de tiles (útil para retry/level change)
     public void ReassignAllEnemyTiles()
@@ -111,7 +64,7 @@ public class LevelDefinition : MonoBehaviour
         {
             if (enemy != null)
             {
-                enemy.AutoAssignTile();
+                enemy.AssignCurrentTile();
             }
         }
 

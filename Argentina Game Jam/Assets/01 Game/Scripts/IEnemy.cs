@@ -20,7 +20,8 @@ public interface IEnemy
     // Métodos principales
     void TakeDamage(int amount);
     void ResetEnemy();
-    void AutoAssignTile();
+    void AssignInitialTile();
+    void AssignCurrentTile();
 
     // GameObject reference
     GameObject GameObject { get; }

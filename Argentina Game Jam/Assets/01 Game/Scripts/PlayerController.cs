@@ -9,6 +9,7 @@ public class PlayerController : MonoBehaviour
     [Header("Rotation")]
     public float rotationSpeed = 720f; // Grados por segundo (720 = 2 rotaciones completas/seg)
 
+    [Header("Others")]
     public Tile currentTile { get; private set; }
     private bool _isMoving;
     private FootstepEmitter footsStepScript;

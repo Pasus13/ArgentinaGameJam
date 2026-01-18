@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public enum TurnState { PlayerTurn, EnemyTurn, Busy, Won, Lost }
@@ -302,7 +304,8 @@ public class GameManager : MonoBehaviour
             if (enemy != null && (enemy.currentTile == null || enemy.initalTile == null))
             {
                 Debug.LogWarning($"⚠️ Enemy {enemy.name} does NOT have tiles assigned! Forcing assignment...");
-                enemy.AutoAssignTile();
+                enemy.AssignCurrentTile();
+                enemy.AssignInitialTile();
                 enemiesWithoutTiles++;
             }
         }
@@ -371,22 +374,7 @@ public class GameManager : MonoBehaviour
         if (BoardManager.Instance != null)
             BoardManager.Instance.BuildFromLevelRoot(level.transform);
 
-        enemies.Clear();
-        enemies.AddRange(level.enemies);
-        Debug.Log("Test: " + enemies[0]);
-
-        // ✅ NUEVO: Auto-asignar tiles a cada enemigo basándose en su posición
-        for (int i = 0; i < enemies.Count; i++)
-        {
-            if (enemies[i] == null) continue;
-
-            // Auto-asignar el tile más cercano
-            enemies[i].AutoAssignTile();
-
-            // Actualizar posición y salud iniciales
-            enemies[i].initialPos = enemies[i].transform.position;
-            enemies[i].health = enemies[i].initialHealth;
-        }
+        ResetEnemiesPlayerValues(enemies, level);
 
         SaveEnemyInitialData();
         ResetRun();
@@ -668,6 +656,59 @@ public class GameManager : MonoBehaviour
         GoalReached?.Invoke(msg);
 
         Debug.Log($"Goal reached: {msg}");
+    }
+
+    private void ResetEnemiesPlayerValues(List<EnemyUnit> enemies, LevelDefinition level)
+    {
+        enemies.Clear();
+        enemies.AddRange(level.enemies);
+
+        Debug.Log($"[GameManager] Resetting {enemies.Count} enemies for level '{level.name}'");
+
+        // ✅ PASO 1: Asignar tiles a cada enemigo ANTES de usarlos
+        for (int i = 0; i < enemies.Count; i++)
+        {
+            if (enemies[i] == null)
+            {
+                Debug.LogWarning($"⚠️ Enemy at index {i} is NULL!");
+                continue;
+            }
+
+            // ✅ Forzar asignación de tiles si no los tiene
+            if (enemies[i].initalTile == null || enemies[i].currentTile == null)
+            {
+                Debug.Log($"   - Assigning tiles to {enemies[i].name}...");
+                enemies[i].AssignInitialTile();
+                enemies[i].AssignCurrentTile();
+            }
+
+            // ✅ VERIFICAR que el tile se asignó correctamente
+            if (enemies[i].initalTile == null)
+            {
+                Debug.LogError($"❌ CRITICAL: {enemies[i].name} still has NULL initalTile after assignment!");
+                continue; // Saltar este enemigo para evitar crash
+            }
+
+            // ✅ PASO 2: Ahora sí, asignar posición inicial desde el tile
+            enemies[i].initialPos = enemies[i].initalTile.transform.position;
+            enemies[i].health = enemies[i].initialHealth;
+
+            Debug.Log($"   ✅ {enemies[i].name} reset - Tile: {enemies[i].initalTile.gridPos}, HP: {enemies[i].health}");
+        }
+
+        // ✅ PASO 3: Resetear player
+        if (player != null && startTile != null)
+        {
+            player.SetPlayerCurrentTile(startTile);
+            player.transform.position = startTile.transform.position;
+            player.GetComponent<PlayerAnimationController>()?.ResetToIdle();
+
+            Debug.Log($"   ✅ Player reset to startTile: {startTile.gridPos}");
+        }
+        else
+        {
+            Debug.LogWarning("⚠️ Player or startTile is NULL!");
+        }
     }
 
 }
